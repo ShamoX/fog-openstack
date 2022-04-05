@@ -33,12 +33,41 @@ services:
     - .:/code:z
     - .:/home/travis/build/fog/fog-openstack:z
     environment:
-    - JRUBY_OPTS=--debug 
+    - JRUBY_OPTS=--debug
     working_dir: /home/travis/build/fog/fog-openstack
     entrypoint: |
       bash -c '
         gem update bundler --verbose
         bundle install --verbose
         bundle exec rake test
+        bundle exec rake spec
+        '
+
+  devstack.openstack.stack:
+    image: devstack.openstack.stack
+    build:
+      context: devstack.openstack.stack
+      dockerfile: Dockerfile
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./devstack.openstack.stack:/code:z
+    entrypoint: bash
+
+  test-build:
+    image: ruby:3.0
+    depends_on:
+      - "devstack.openstack.stack"
+    volumes:
+      - .:/code:z
+      - .:/home/travis/build/fog/fog-openstack:z
+    working_dir: /home/travis/build/fog/fog-openstack
+    entrypoint: |
+      bash -c '
+        apt install wait-for-it
+        gem update bundler --verbose
+        bundle install --verbose
+        rm -fr spec/fixtures/openstack
+        wait-for-it.sh -t 60 devstack.openstack.stack:5000
         bundle exec rake spec
         '
