@@ -9,8 +9,14 @@ USER stack
 
 WORKDIR /home/stack
 
-COPY . .
+RUN git clone https://opendev.org/openstack/devstack
 
-RUN bash install-as-stack.sh
+COPY local.conf devstack/local.conf
+
+WORKDIR /home/stack/devstack
+
+RUN bash stack.sh
+
+WORKDIR /home/stack
 
 CMD sleep 120
